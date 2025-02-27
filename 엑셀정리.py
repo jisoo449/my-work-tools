@@ -3,6 +3,7 @@ import tarfile
 import re
 import pandas as pd
 from openpyxl import Workbook
+from openpyxl import load_workbook
 
 # 해당 경로에서 *_secure.tar 파일 찾기
 def unzip(dir):
@@ -55,5 +56,40 @@ def writeExcel(dir):
     print(f"엑셀 파일 저장 완료: {excel_path}")    
 
 
+def findUserState(dir):
+
+    # 정규 표현식 패턴 정의
+    user_pattern = re.compile(r"session (opened|closed) for user (\S+)")
+
+    # 엑셀 파일 열기
+    wb = load_workbook(dir)
+
+    # 모든 시트에 대해 반복
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        
+        # E, F 컬럼 제목 추가
+        ws["E1"] = "사용자명"
+        ws["F1"] = "접속 상태"
+        
+        for row in range(2, ws.max_row + 1):  # 2번째 행부터 읽기 (1번째 행은 헤더)
+            log_entry = ws[f"D{row}"].value  # D열(로그 내용) 읽기
+            
+            if log_entry:
+                match = user_pattern.search(log_entry)
+                if match:
+                    status, user = match.groups()
+                    
+                    # 사용자명 추가 (E열)
+                    ws[f"E{row}"] = user
+                    
+                    # 접속 상태 추가 (F열)
+                    ws[f"F{row}"] = "접속 생성" if status == "opened" else "접속 해제"
+
+    # 엑셀 저장
+    wb.save(dir)
+    print(f"엑셀 파일 업데이트 완료: {dir}")
+
 dir=r"C:\Users\INNOGRID\Documents\Amaranth10\[울산항만공사 대표홈페이지] 접속기록 및 정책설정 로그"
-writeExcel(dir)
+dir2=r"C:\Users\INNOGRID\Documents\Amaranth10\secure_logs_수정 by Moon.xlsx"
+findUserState(dir2)
