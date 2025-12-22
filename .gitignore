@@ -1,7 +1,11 @@
 __pychace__/
-
 *.pyc
 
 build/
 dist/
+*.spec
+
+
 do_not_upload/
+*.pptx
+*.xlsx
