@@ -1,5 +1,6 @@
 import re
 import io
+import os
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass
@@ -11,12 +12,14 @@ from merge_ppt import merge_ppts_with_merger
 
 from duplicate_ppts import copy_pptx_to_multiple_names
 
+from select_folder_file import select_folder
+
 # -----------------------------
 # 0) 사용자 환경에 맞게 수정할 설정
 # -----------------------------
-CPU_MEM_XLSX = "cpu_mem.xlsx"
-NETWORK_XLSX = "network.xlsx"
-FS_XLSX = "filesystem.xlsx"
+CPU_MEM_XLSX = "[SMS] CPU Used (%), MEM Used (%).xlsx"
+NETWORK_XLSX = "[SMS] Network Traffic - In bps (bps), Out bps (bps).xlsx"
+FS_XLSX = "[SMS] Storage - 파일시스템 사용률 (%).xlsx"
 REPORT_OUTPUT_PPTX = "server_report.pptx"
 TEMPLATE_PPTX = "template02.pptx"
 
@@ -218,7 +221,6 @@ def parse_excel_as_blocks(xlsx_path: str, sheet_name: Optional[str] = None,
 
     return results
 
-
 # -----------------------------
 # 4) 메인 실행부
 # -----------------------------
@@ -227,9 +229,11 @@ def main():
     date_str = (date.today() - relativedelta(months=1)).strftime("%y년 %#m월")
     OUTPUT_PPTX = f"{date_str} 월간 운영보고서.pptx"
 
-    cpu_mem_blocks = parse_excel_as_blocks(CPU_MEM_XLSX)
-    net_blocks = parse_excel_as_blocks(NETWORK_XLSX)
-    fs_blocks = parse_excel_as_blocks(FS_XLSX)
+    # CPU/MEM, Network, Filesystem 파일 선택 후 excel 파싱
+    folder_path = select_folder(msg="CPU/MEM, Network Traffic, 파일시스템 사용률이 위치한 디렉토리를 선택하세요")
+    cpu_mem_blocks = parse_excel_as_blocks(folder_path+"/"+CPU_MEM_XLSX)
+    net_blocks = parse_excel_as_blocks(folder_path+"/"+NETWORK_XLSX)
+    fs_blocks = parse_excel_as_blocks(folder_path+"/"+FS_XLSX)
 
     # 서버 키(서버명 (IP)) 기준으로 교집합/합집합 구성
     all_servers = sorted(set(cpu_mem_blocks) | set(net_blocks) | set(fs_blocks))
@@ -255,11 +259,18 @@ def main():
     merge_ppts_with_merger(["template01.pptx", REPORT_OUTPUT_PPTX,"template03.pptx"],OUTPUT_PPTX)
     
     agencies = ["경북농식품유통교육진흥원","경북문화재단","경북바이오산업연구원","경북여성정책개발원","경북종합자원봉사센터","경북행복재단","경상북도경제진흥원","경상북도교통문화연수원","경상북도인재평생교육재단","경상북도장애인체육회","경상북도호국보훈재단","경상북도환경연수원","독도재단","새마을재단","한국국학진흥원"]
+    output_dir = select_folder(msg="월간보고서 PPTX 파일을 저장할 디렉토리를 선택하세요")
     for agency in agencies:
         copy_pptx_to_multiple_names(
             date=date_str,
             src_pptx=OUTPUT_PPTX,
-            target_pptx=agency)
+            target_pptx=agency,
+            output_dir=output_dir)
+        
+    # SR내역 추가
+    
+    os.remove(REPORT_OUTPUT_PPTX)
+    os.remove(OUTPUT_PPTX)
 
 if __name__ == "__main__":
     main()

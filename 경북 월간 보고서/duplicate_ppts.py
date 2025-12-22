@@ -62,7 +62,7 @@ def copy_pptx_to_multiple_names(
     date: str, 
     src_pptx: str | Path,
     target_pptx: str | Path,
-    output_directory: str | Path = None,
+    output_dir: str | Path = None,
 ):
     """
     src_pptx: 원본 pptx 파일 (a)
@@ -70,7 +70,7 @@ def copy_pptx_to_multiple_names(
     """
     # 1) 파일 복사
     filename = src_pptx.replace(".pptx","("+target_pptx+").pptx")
-    Path(filename).write_bytes(Path(src_pptx).read_bytes())
+    Path(output_dir, filename).write_bytes(Path(src_pptx).read_bytes())
 
     # 2) 표지의 '기관명' 텍스트 교체
     change_shape_text(
