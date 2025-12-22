@@ -1,0 +1,1 @@
+python -m PyInstaller --onedir --name myapp --collect-all pptx_merger create_report_gyeongbuk.py
