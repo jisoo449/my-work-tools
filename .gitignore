@@ -1,3 +1,7 @@
 __pychace__/
+
+*.pyc
+
 build/
 dist/
+do_not_upload/
