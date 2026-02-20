@@ -200,6 +200,7 @@ def parse_excel_as_blocks(xlsx_path: str, sheet_name: Optional[str] = None,
     """
     Excel 한 파일을 서버명 기준 MetricBlock으로 파싱하여 dict 반환.
     """
+
     wb = load_workbook(xlsx_path, data_only=True)
     ws = wb[sheet_name] if sheet_name else wb.active
 
@@ -219,6 +220,7 @@ def parse_excel_as_blocks(xlsx_path: str, sheet_name: Optional[str] = None,
 
         results[server_trimed] = MetricBlock(stats_by_metric=stats, images=images)
 
+    print(f"{xlsx_path}파일에 대해 총 {len(results)}개 서버 블록 파싱 완료.")
     return results
 
 # -----------------------------
@@ -231,6 +233,8 @@ def main():
 
     # CPU/MEM, Network, Filesystem 파일 선택 후 excel 파싱
     folder_path = select_folder(msg="CPU/MEM, Network Traffic, 파일시스템 사용률이 위치한 디렉토리를 선택하세요")
+
+    print("step1. Excel 파일 파싱 중...")
     cpu_mem_blocks = parse_excel_as_blocks(folder_path+"/"+CPU_MEM_XLSX)
     net_blocks = parse_excel_as_blocks(folder_path+"/"+NETWORK_XLSX)
     fs_blocks = parse_excel_as_blocks(folder_path+"/"+FS_XLSX)
@@ -249,6 +253,7 @@ def main():
             )
         )
 
+    print("\n step2. 엑셀 파일을 토대로 PPT 파일 생성 중...")
     build_ppt_from_template(
         template_pptx=TEMPLATE_PPTX,
         output_pptx=REPORT_OUTPUT_PPTX,
@@ -256,8 +261,10 @@ def main():
         date=date_str
     )
 
+    print("\n step3. template 파일들 merge 중...")
     merge_ppts_with_merger(["template01.pptx", REPORT_OUTPUT_PPTX,"template03.pptx"],OUTPUT_PPTX)
     
+    print("\n step4. 기관별 PPT 복사 및 텍스트 교체 중...")
     agencies = ["경북농식품유통교육진흥원","경북문화재단","경북바이오산업연구원","경북여성정책개발원","경북종합자원봉사센터","경북행복재단","경상북도경제진흥원","경상북도교통문화연수원","경상북도인재평생교육재단","경상북도장애인체육회","경상북도호국보훈재단","경상북도환경연수원","독도재단","새마을재단","한국국학진흥원"]
     output_dir = select_folder(msg="월간보고서 PPTX 파일을 저장할 디렉토리를 선택하세요")
     for agency in agencies:

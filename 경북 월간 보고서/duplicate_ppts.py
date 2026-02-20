@@ -68,13 +68,19 @@ def copy_pptx_to_multiple_names(
     src_pptx: 원본 pptx 파일 (a)
     target_pptx: 복사본 파일 경로 (b)
     """
+
+    src_pptx = Path(src_pptx)
+    output_dir = Path(output_dir) if output_dir else Path.cwd()
+
+    filename = f"{src_pptx.stem}({target_pptx}){src_pptx.suffix}"
+    file_path = output_dir / filename
+
     # 1) 파일 복사
-    filename = src_pptx.replace(".pptx","("+target_pptx+").pptx")
-    Path(output_dir, filename).write_bytes(Path(src_pptx).read_bytes())
+    file_path.write_bytes(src_pptx.read_bytes())
 
     # 2) 표지의 '기관명' 텍스트 교체
     change_shape_text(
-        pptx_path=filename,
+        pptx_path=str(file_path),
         shape_name="기관명",
         new_text=target_pptx,
         font_size=36,
@@ -85,7 +91,7 @@ def copy_pptx_to_multiple_names(
 
     #3) 날짜 텍스트 교체
     change_shape_text(
-        pptx_path=filename,
+        pptx_path=str(file_path),
         shape_name="날짜",
         new_text=date,
         font_size=12,
@@ -93,3 +99,5 @@ def copy_pptx_to_multiple_names(
         font_bold=False,
         font_color_rgb=RGBColor(0x00, 0x21, 0x46)
     )
+
+    print(f"기관별 ppt 생성 완료: {file_path}")

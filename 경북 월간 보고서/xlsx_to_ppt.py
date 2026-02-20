@@ -225,6 +225,7 @@ def duplicate_slide(prs, slide_index=0):
 # PPT 빌드 함수 (안전 버전)
 # -----------------------------
 def build_ppt_from_template(template_pptx, output_pptx,reports, date):
+
     prs = Presentation(template_pptx)
     if not reports:
         raise ValueError("reports가 비어 있습니다.")
@@ -255,6 +256,7 @@ def build_ppt_from_template(template_pptx, output_pptx,reports, date):
         populate_slide_with_report(prs.slides[i], rep)
 
     prs.save(output_pptx)
+    print(f"PPTX 파일 생성 완료: {output_pptx}")
 
 
 # -----------------------------

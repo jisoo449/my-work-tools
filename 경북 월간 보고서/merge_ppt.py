@@ -21,6 +21,6 @@ def merge_ppts_with_merger(pptx_paths, output_path):
     with open(output_path, "wb") as f:
         f.write(merged_io.getvalue())
 
-    # print(dir(Merger))
+    print(f"template 병합 완료: {output_path}")
 
     

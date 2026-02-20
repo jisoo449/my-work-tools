@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>메일 발송</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    label { display:block; margin: 12px 0 6px; font-weight: 600; }
+    input, textarea { width:100%; padding: 10px; font-size: 14px; }
+    textarea { min-height: 160px; }
+    button { margin-top: 16px; padding: 10px 14px; font-size: 14px; cursor:pointer; }
+    .hint { color:#666; font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>메일 발송</h1>
+
+  <form method="POST" action="/send">
+    <label>받는 사람(To)</label>
+    <input name="to" type="email" required placeholder="to@example.com" />
+
+    <label>제목(Subject)</label>
+    <input name="subject" type="text" required placeholder="제목" />
+
+    <label>내용(Body)</label>
+    <textarea name="body" required placeholder="메일 내용"></textarea>
+
+    <button type="submit">보내기</button>
+  </form>
+
+  <p class="hint">
+    * 발신자/SMTP 정보는 서버 환경변수(.env)로 설정됩니다.
+  </p>
+</body>
+</html>
