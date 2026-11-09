@@ -166,7 +166,7 @@ def extract_network_resource(ym, resource_filename, network_filename1, network_f
     """
 
     # 1. 파일 생성 및 열기
-    dir=r'C:\Users\INNOGRID\Documents\Amaranth10\NIA 월간운영보고서 재작성 요청'
+    dir=os.path.join(os.path.expanduser('~'), 'Documents', 'Amaranth10', 'NIA 월간운영보고서 재작성 요청')
     filepath = os.path.join(dir,"데이터 추출.xlsx")
     if os.path.exists(filepath):
         wb = openpyxl.load_workbook(filepath)
@@ -187,7 +187,7 @@ def extract_network_resource(ym, resource_filename, network_filename1, network_f
     wb.close()
 
 
-dir=r'C:\Users\INNOGRID\Documents\Amaranth10\NIA 월간운영보고서 재작성 요청'
+dir=os.path.join(os.path.expanduser('~'), 'Documents', 'Amaranth10', 'NIA 월간운영보고서 재작성 요청')
 resource="리소스-2412.xlsx"
 netework1="화성-네트워크-2412-part1.xlsx"
 netework2="화성-네트워크-2412-part2.xlsx"

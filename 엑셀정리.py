@@ -90,6 +90,6 @@ def findUserState(dir):
     wb.save(dir)
     print(f"엑셀 파일 업데이트 완료: {dir}")
 
-dir=r"C:\Users\INNOGRID\Documents\Amaranth10\[울산항만공사 대표홈페이지] 접속기록 및 정책설정 로그"
-dir2=r"C:\Users\INNOGRID\Documents\Amaranth10\secure_logs_수정 by Moon.xlsx"
+dir=os.path.join(os.path.expanduser('~'), 'Documents', 'Amaranth10', '[울산항만공사 대표홈페이지] 접속기록 및 정책설정 로그')
+dir2=os.path.join(os.path.expanduser('~'), 'Documents', 'Amaranth10', 'secure_logs_수정 by Moon.xlsx')
 findUserState(dir2)

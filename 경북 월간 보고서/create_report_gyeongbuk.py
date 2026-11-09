@@ -23,7 +23,7 @@ FS_XLSX = "[SMS] Storage - 파일시스템 사용률 (%).xlsx"
 REPORT_OUTPUT_PPTX = "server_report.pptx"
 TEMPLATE_PPTX = "template02.pptx"
 
-# 서버 블록을 찾을 때 사용할 패턴 (예: bastion-lnx (172.25.0.74))
+# 서버 블록을 찾을 때 사용할 패턴 (예: web-server (10.0.0.10))
 SERVER_NAME_PATTERN = re.compile(r".+\(\s*\d{1,3}(?:\.\d{1,3}){3}\s*\)")
 
 # 서버 블록 범위(시작행부터 몇 행까지를 같은 서버 섹션으로 볼지)

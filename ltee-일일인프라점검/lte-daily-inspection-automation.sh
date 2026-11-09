@@ -20,6 +20,16 @@
 #   - CloudWatch 지표 설정 필요
 ##############################################################################
 
+### 민감 설정 로드
+# 인스턴스 ID, 메일 주소, 서명 경로 등은 같은 폴더의 config.env 에서 읽는다 (git 제외)
+# 처음 사용할 때: config.env.example 을 config.env 로 복사해 값을 채운다
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ ! -f "${SCRIPT_DIR}/config.env" ]; then
+  echo "config.env 파일이 없습니다. config.env.example 을 복사해 작성하세요." >&2
+  exit 1
+fi
+. "${SCRIPT_DIR}/config.env"
+
 ### 전역변수
 YESTERDAY=$(date -d "yesterday" +"%Y-%m-%d")  # 어제 날짜 (YYYY-MM-DD)
 ROOT_TOTAL_GB=50                              # 기본 디스크 전체 용량 (예: 50GB)
@@ -28,12 +38,13 @@ TOTAL_MEM_GIB=16                              # 메모리 전체 용량 (예: 16
 
 ### 커스텀 필요
 REGION="ap-northeast-2"
-INSTANCE_ID="i-04061836423461dec"
+INSTANCE_ID="${INSTANCE_ID:?config.env 에 INSTANCE_ID 를 설정하세요}"
+IMAGE_ID="${IMAGE_ID:?config.env 에 IMAGE_ID 를 설정하세요}"
 METRICS=(
   "AWS/EC2|CPUUtilization|Name=InstanceId,Value=$INSTANCE_ID"
   "CWAgent|mem_used_percent|Name=InstanceId,Value=$INSTANCE_ID"
-  "CWAgent|disk_used_percent|Name=InstanceId,Value=$INSTANCE_ID Name=ImageId,Value=ami-0f073fe0085319698 Name=InstanceType,Value=m5.xlarge Name=device,Value=nvme0n1p1 Name=path,Value=/ Name=fstype,Value=xfs"
-  "CWAgent|disk_used_percent|Name=InstanceId,Value=$INSTANCE_ID Name=ImageId,Value=ami-0f073fe0085319698 Name=InstanceType,Value=m5.xlarge Name=device,Value=mapper/lvmVG-lvmLV Name=path,Value=/data Name=fstype,Value=xfs"
+  "CWAgent|disk_used_percent|Name=InstanceId,Value=$INSTANCE_ID Name=ImageId,Value=$IMAGE_ID Name=InstanceType,Value=m5.xlarge Name=device,Value=nvme0n1p1 Name=path,Value=/ Name=fstype,Value=xfs"
+  "CWAgent|disk_used_percent|Name=InstanceId,Value=$INSTANCE_ID Name=ImageId,Value=$IMAGE_ID Name=InstanceType,Value=m5.xlarge Name=device,Value=mapper/lvmVG-lvmLV Name=path,Value=/data Name=fstype,Value=xfs"
 )
 
 ### ====== 엑셀 템플릿 / 결과 파일 경로 =======
@@ -76,9 +87,9 @@ for item in "${METRICS[@]}"; do
 
     # ii. aws 호출 자체가 실패한 경우 호출 실페 메일 발송 후 종료
     # echo "CloudWatch ${METRIC_NAME} 지표 조회 실패"
-    msmtp -a bjs bjs@innogrid.com <<EOF
-From: "Monitoring" <bjs@innogrid.com>
-To: bjs@innogrid.com
+    msmtp -a "$MSMTP_ACCOUNT" "$ALERT_TO" <<EOF
+From: "Monitoring" <${MAIL_FROM}>
+To: ${ALERT_TO}
 Subject: [긴급] CloudWatch ${METRIC_NAME} 지표 수집 실패
 
 현재 인스턴스 ${INSTANCE_ID}의 ${METRIC_NAME} 지표를 CloudWatch에서 조회하지 못했습니다.
@@ -92,9 +103,9 @@ EOF
   if [ "$DATAPOINT_LEN" -eq 0 ]; then
     echo "Error: No datapoints for mem_used_percent"
     # --- 데이터 포인트가 없는 경우 메일 발송 ---
-    msmtp -a bjs bjs@innogrid.com <<EOF
-From: "Monitoring" <bjs@innogrid.com>
-To: bjs@innogrid.com
+    msmtp -a "$MSMTP_ACCOUNT" "$ALERT_TO" <<EOF
+From: "Monitoring" <${MAIL_FROM}>
+To: ${ALERT_TO}
 Subject: [긴급] CloudWatch ${METRIC_NAME} 지표 데이터 없음
 
 현재 인스턴스 ${INSTANCE_ID}의 ${METRIC_NAME} 지표에 수집된 데이터가 없습니다.
@@ -128,10 +139,10 @@ if [[ "$HTTP_CODE" =~ ^(200|301|302|403)$ ]]; then
   SITE_STATUS="정상"
 else
   SITE_STATUS="비정상"
-  # --- 비정상일 때 박지수에게 메일 발송 ---
-  msmtp -a bjs bjs@innogrid.com <<EOF
-From: "Monitoring" <bjs@innogrid.com>
-To: bjs@innogrid.com
+  # --- 비정상일 때 담당자에게 메일 발송 ---
+  msmtp -a "$MSMTP_ACCOUNT" "$ALERT_TO" <<EOF
+From: "Monitoring" <${MAIL_FROM}>
+To: ${ALERT_TO}
 Subject: [긴급] 사이트 비정상 - 서버 확인 필요
 
 현재 https://lotteenergymaterials.com/ 사이트 응답 코드가 $HTTP_CODE 로 비정상입니다.
@@ -226,13 +237,13 @@ echo "생성 완료: $OUTFILE"
 # **********************************************************************************************
 BOUNDARY="====BOUNDARY_$(date +%s)==="
 ENCODED_FILENAME=$(echo -n "$FILENAME" | iconv -f utf-8 -t euc-kr)
-MAIL_SIGN_HTML="$(cat /home/lte/daily-inspection/mail-sign.html)"
+MAIL_SIGN_HTML="$(cat "${MAIL_SIGN_FILE:-${SCRIPT_DIR}/mail-sign.html}")"
 
-# 테스트용: msmtp -a bjs bjs@innogrid.com<<EOF
-msmtp -a bjs bjs@innogrid.com yangjeonghwan@lotte.net sunhwa_kim1@lotte.net kjkang1@lotte.net csp@innogrid.com mjh@innogrid.com<<EOF
-From: "Innogrid" <bjs@innogrid.com>
-To: yangjeonghwan@lotte.net
-Cc: sunhwa_kim1@lotte.net, kjkang1@lotte.net, csp@innogrid.com, mjh@innogrid.com
+# 테스트용: msmtp -a "$MSMTP_ACCOUNT" "$TEST_MAIL_TO" <<EOF
+msmtp -a "$MSMTP_ACCOUNT" "$MAIL_FROM" "$MAIL_TO" ${MAIL_CC//,/ } <<EOF
+From: "${MAIL_FROM_NAME}" <${MAIL_FROM}>
+To: ${MAIL_TO}
+Cc: ${MAIL_CC//,/, }
 Subject: [롯데에너지머티리얼즈] ${TITLE_DATE} 정보시스템 일일 점검서 전달드립니다
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
@@ -241,11 +252,11 @@ Content-Type: multipart/mixed; boundary="$BOUNDARY"
 Content-Type: text/html; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 
-<div>안녕하세요, 이노그리드 박지수입니다.</div>
+<div>안녕하세요, ${COMPANY_NAME} ${SENDER_NAME}입니다.</div>
 <div>$TITLE_DATE 롯데에너지머티리얼즈 정보시스템 일일 점검서 전달 드립니다.</div>
 <div>첨부 파일 확인 부탁드립니다.</div>
 <div>감사합니다.</div>
-<div>박지수 드림.</div>
+<div>${SENDER_NAME} 드림.</div>
 
 
 ${MAIL_SIGN_HTML}

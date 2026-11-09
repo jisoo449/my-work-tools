@@ -1,4 +1,4 @@
-__pychace__/
+__pycache__/
 *.pyc
 
 build/
@@ -9,3 +9,8 @@ dist/
 do_not_upload/
 *.pptx
 *.xlsx
+
+# 민감 정보 / 로컬 설정 (예시는 *.example 파일 참고)
+.env
+config.env
+mail-sign.html

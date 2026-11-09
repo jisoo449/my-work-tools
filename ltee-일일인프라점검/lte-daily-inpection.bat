@@ -2,6 +2,14 @@
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
+:: 민감 설정(인스턴스 ID, 메일 주소 등)은 같은 폴더의 config.env 에서 읽음 (git 제외)
+:: 처음 사용할 때: config.env.example 을 config.env 로 복사해 값을 채운다
+if not exist "%~dp0config.env" (
+  echo config.env 파일이 없습니다. config.env.example 을 복사해 작성하세요.
+  exit /b 1
+)
+for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%~dp0config.env") do set "%%a=%%b"
+
 ::############################################################################
 :: LTE 일일 점검 자동화 스크립트 (Windows 변환본)
 :: 원작성자: 박지수
@@ -21,22 +29,22 @@ setlocal enabledelayedexpansion
 :: [사전설정] 커스텀 필요 항목
 :: ============================================================
 set REGION=ap-northeast-2
-set INSTANCE_ID=i-04061836423461dec
+:: INSTANCE_ID 는 config.env 에서 설정
 set ROOT_TOTAL_GB=50
 set DATA_TOTAL_GB=500
 set TOTAL_MEM_GIB=16
 
 :: jq 경로 (jq.exe를 PATH에 넣었으면 그냥 jq 로 써도 됨)
-set JQ=C:\Users\INNOGRID\AppData\Local\Microsoft\WinGet\Packages\jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe\jq.exe
+if not defined JQ set JQ=jq
 
 :: 결과물 저장 디렉토리 및 템플릿 경로
-set OUTDIR=C:\Users\INNOGRID\개인용 폴더\my-work-tools\ltee-일일인프라점검\results
-set TEMPLATE=C:\Users\INNOGRID\개인용 폴더\my-work-tools\ltee-일일인프라점검\xx.xx.xx_롯데에너지머티리얼즈_인스턴스_일일사용률_보고서.xlsx
+set OUTDIR=%~dp0results
+set TEMPLATE=%~dp0xx.xx.xx_롯데에너지머티리얼즈_인스턴스_일일사용률_보고서.xlsx
 
 :: 메일 서명 경로
-set MAIL_FROM=bjs@innogrid.com
-set MAIL_SIGN=C:\Users\INNOGRID\개인용 폴더\my-work-tools\ltee-일일인프라점검\mail-sign.html
-set MAIL_PS_SCRIPT=C:\Users\INNOGRID\개인용 폴더\my-work-tools\ltee-일일인프라점검\send-mail.ps1
+:: MAIL_FROM 은 config.env 에서 설정
+set MAIL_SIGN=%~dp0mail-sign.html
+set MAIL_PS_SCRIPT=%~dp0send-mail.ps1
 
 :: ============================================================
 :: 날짜 계산 (어제)
@@ -97,7 +105,7 @@ aws cloudwatch get-metric-statistics ^
   --metric-name disk_used_percent ^
   --dimensions ^
     Name=InstanceId,Value=%INSTANCE_ID% ^
-    Name=ImageId,Value=ami-0f073fe0085319698 ^
+    Name=ImageId,Value=%IMAGE_ID% ^
     Name=InstanceType,Value=m5.xlarge ^
     Name=device,Value=nvme0n1p1 ^
     Name=path,Value=/ ^
@@ -118,7 +126,7 @@ aws cloudwatch get-metric-statistics ^
   --metric-name disk_used_percent ^
   --dimensions ^
     Name=InstanceId,Value=%INSTANCE_ID% ^
-    Name=ImageId,Value=ami-0f073fe0085319698 ^
+    Name=ImageId,Value=%IMAGE_ID% ^
     Name=InstanceType,Value=m5.xlarge ^
     Name=device,Value=mapper/lvmVG-lvmLV ^
     Name=path,Value=/data ^
@@ -205,9 +213,9 @@ echo [STEP 4] 메일 발송 중...
 
 @REM powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 @REM "$signHtml = if (Test-Path '%MAIL_SIGN%') { Get-Content '%MAIL_SIGN%' -Raw } else { '' };" ^
-@REM "$body = '<div>안녕하세요, 이노그리드 박지수입니다.</div>' +" ^
+@REM "$body = '<div>안녕하세요, %COMPANY_NAME% %SENDER_NAME%입니다.</div>' +" ^
 @REM "        '<div>%TITLE_DATE% 롯데에너지머티리얼즈 정보시스템 일일 점검서 전달 드립니다.</div>' +" ^
-@REM "        '<div>첨부 파일 확인 부탁드립니다.</div><div>감사합니다.</div><div>박지수 드림.</div>' +" ^
+@REM "        '<div>첨부 파일 확인 부탁드립니다.</div><div>감사합니다.</div><div>%SENDER_NAME% 드림.</div>' +" ^
 @REM "        $signHtml;" ^
 @REM "$ol = New-Object -ComObject Outlook.Application;" ^
 @REM "$mail = $ol.CreateItem(0);" ^
